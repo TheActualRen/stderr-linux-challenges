@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char table[65] = 
+static char table[65] = 
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
@@ -37,32 +37,7 @@ void charToByte(char c, char* bin, int idx) {
 	}
 }
 
-int readFile(const char* filename, unsigned char** buffer) {
-	FILE* f = fopen(filename, "rb");
-
-	if (!f) {
-		perror("Failed to open file");
-		return -1;
-	}
-
-	fseek(f, 0, SEEK_END);
-	int size = ftell(f);
-	rewind(f);
-
-	*buffer = malloc(size);
-	
-	if (!*buffer) {
-		perror("Memory allocation failed");
-		fclose(f);
-		return -1;
-	}
-
-	fread(*buffer, 1, size, f);
-	fclose(f);
-	return size;
-}
-
-const unsigned char* encode(const unsigned char *input, int* outputLen) {
+const unsigned char* encode(const unsigned char* input, int* outputLen) {
 	const int inputLen = getsizeof(input);
 
 	const int encodedLen = ((inputLen + 2) / 3) * 4;
@@ -139,16 +114,6 @@ char binToByte(char* bin) {
 	return (char)value;
 }
 
-void writeToFile(const unsigned char* output, int length, const char* filename) {
-	FILE *f = fopen(filename, "wb");
-	if (!f) {
-		perror("Failed to open file");
-		return;
-	}
-	fwrite(output, 1, length, f);
-	fclose(f);
-
-}
 
 const unsigned char* decode(const unsigned char* input, int* outputLen) {
 	int inputLen = getsizeof(input);
@@ -184,6 +149,44 @@ const unsigned char* decode(const unsigned char* input, int* outputLen) {
 	return decoded;
 }
 
+void writeToFile(const unsigned char* output, int length, const char* filename) {
+	FILE *f = fopen(filename, "wb");
+	if (!f) {
+		perror("Failed to open file");
+		return;
+	}
+	fwrite(output, 1, length, f);
+	fclose(f);
+
+}
+
+
+int readFile(const char* filename, unsigned char** buffer) {
+	FILE* f = fopen(filename, "rb");
+
+	if (!f) {
+		perror("Failed to open file");
+		return -1;
+	}
+
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	rewind(f);
+
+	*buffer = malloc(size);
+	
+	if (!*buffer) {
+		perror("Memory allocation failed");
+		fclose(f);
+		return -1;
+	}
+
+	fread(*buffer, 1, size, f);
+	fclose(f);
+	return size;
+}
+
+
 
 void printBinary(unsigned char byte) {
 	for (int i = 7; i >= 0; i--) {
@@ -197,36 +200,4 @@ void printBinaryBuffer(const unsigned char* data, int len) {
 		printf(" ");
 	}
 	printf("\n");
-}
-
-
-int main() {
-	/*const unsigned char text[] = "H4sIAAAAAAACAysuSUktKopPyVbILFYIcvR0ycxLVyjPLMlQSFQoSCwqqVTIT1Mw1QMA1OS3RycAAAA=";*/
-	/**/
-	/*int decodedLen;*/
-	/*const unsigned char* decoded = decode(text, &decodedLen);*/
-	/*printBinaryBuffer(decoded, decodedLen);*/
-	/*writeToFile(decoded, decodedLen, "decoded.txt");*/
-	/**/
-	/*free((void*)decoded);*/
-	/**/
-	/*unsigned char* data;*/
-	/*int size = readFile("input.gz", &data);*/
-	/*if (size < 0) return 1;*/
-	/**/
-	/*int encodedLen;*/
-	/*const unsigned char* encoded = encode(data, &encodedLen);*/
-	/*writeToFile(encoded, encodedLen, "other.gz");*/
-	/**/
-	/*free(data);*/
-	/**/
-	/*return 0;*/
-	
-	const unsigned char text[] = "SGVsbG8gV29ybGQ=";
-	int decodedLen;
-	const unsigned char* decoded = decode(text, &decodedLen);
-	printf("Decoded: %s\n", decoded);
-	writeToFile(decoded, decodedLen, "decoded.txt");
-	free((void*)decoded);
-
 }
