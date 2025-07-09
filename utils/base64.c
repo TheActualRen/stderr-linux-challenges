@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 char table[65] = 
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -36,14 +37,44 @@ void charToByte(char c, char* bin, int idx) {
 	}
 }
 
-void encode(const unsigned char *input) {
-	const int inputLen = getsizeof(input);
+int readFile(const char* filename, unsigned char** buffer) {
+	FILE* f = fopen(filename, "rb");
+
+	if (!f) {
+		perror("Failed to open file");
+		return -1;
+	}
+
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	rewind(f);
+
+	*buffer = malloc(size);
+	
+	if (!*buffer) {
+		perror("Memory allocation failed");
+		fclose(f);
+		return -1;
+	}
+
+	fread(*buffer, 1, size, f);
+	fclose(f);
+	return size;
+}
+
+const unsigned char* encode(const unsigned char *input, int inputLen) {
+	/*const int inputLen = getsizeof(input);*/
 
 	const int encodedLen = ((inputLen + 2) / 3) * 4;
 	const int totalBits = encodedLen * 6;
 	const int padding = (3 - (inputLen % 3)) % 3;
 
 	char bin[totalBits + 1];
+
+	for (int i = 0; i < totalBits; i++) {
+		bin[i] = '0';
+	}
+
 	bin[totalBits] = '\0';
 
 	for (int i = 0; i < inputLen; i++) {
@@ -51,9 +82,14 @@ void encode(const unsigned char *input) {
 	}
 
 	char buf[6];
-	char encoded[encodedLen + 1];
-	int j = 0;
+	/*char encoded[encodedLen + 1];*/
 
+	unsigned char *encoded = malloc(encodedLen + 1);
+	if (!encoded) {
+		return NULL;
+	}
+
+	int j = 0;
 	for (int i = 0; i < totalBits; i++) {
 		buf[i % 6] = bin[i];
 
@@ -67,7 +103,7 @@ void encode(const unsigned char *input) {
 	}
 
 	encoded[encodedLen] = '\0';
-	printf("Encoded: %s\n", encoded);
+	return encoded;
 }
 
 int getTableIndex(char c) {
@@ -101,13 +137,7 @@ char binToByte(char* bin) {
 	return (char)value;
 }
 
-void decode(const unsigned char* encoded) {
-	// remove the padding if any
-	// convert the char to int using the table
-	// put the num into 6 bit binary charToBin()
-	// go over 8 bits 
-	// convert to char
-	
+const unsigned char* decode(const unsigned char* encoded) {
 	int len = getsizeof(encoded);
 
 	while (encoded[len - 1] == '=') {
@@ -130,15 +160,14 @@ void decode(const unsigned char* encoded) {
 	bin[k] = '\0';
 
 	int totalBytes = k / 8;
-	char output[totalBytes + 1];
+	unsigned char* output = malloc(totalBytes + 1);
 
 	for (int i = 0; i < totalBytes; i++) {
 		output[i] = binToByte(&bin[i * 8]);
 	}
 	output[totalBytes] = '\0';
 
-	printf("Decoded: %s\n", output);
-
+	return output;
 	/*FILE *f = fopen("input.gz", "wb");*/
 	/*if (!f) {*/
 	/*	perror("Failed to open file");*/
@@ -151,7 +180,17 @@ void decode(const unsigned char* encoded) {
 
 int main() {
 	const unsigned char encoded_text[] = "H4sIAAAAAAACAysuSUktKopPyVbILFYIcvR0ycxLVyjPLMlQSFQoSCwqqVTIT1Mw1QMA1OS3RycAAAA=";
-	decode(encoded_text);
+	const unsigned char* decoded = decode(encoded_text);
+
+	printf("Decoded output: %s\n", decoded);
+	free((void*)decoded);
+
+	unsigned char* data;
+	int size = readFile("input.gz", &data);
+	if (size < 0) return 1;
+
+	encode(data, size);
+	free(data);
 
 	return 0;
 }
