@@ -1,3 +1,6 @@
 # ignore all the exe i will make
 .exe
 .out
+
+# ignore specific file names
+input.gz
