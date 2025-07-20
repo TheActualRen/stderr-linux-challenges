@@ -4,6 +4,7 @@
 # ignore all the exe i will make
 **.exe
 **.out
+**.obsidian
 
 # ignore specific file names
 **/input.gz
