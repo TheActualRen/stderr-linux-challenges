@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX 512
+
 // TODO:
 // 1) Populate a Huffman Tree so that I can get the coded bits for a character
 //		- Need to build a BINARY_TREE
@@ -9,130 +11,108 @@
 //		- For the PRIORITY_QUEUE will need a linked list struct and queue struct
 //		- For the BINARY_TREE I will need a tree node struct
 
+typedef struct HuffmanNode {
+	char c;
+	int freq;
+	struct HuffmanNode* left;
+	struct HuffmanNode* right;
+} HuffmanNode;
+
+typedef struct {
+	HuffmanNode* items[MAX];
+	int size;
+} MinHeap;
+
 typedef struct QueueNode {
-	int val;
+	HuffmanNode* data;
 	struct QueueNode* next;
 } QueueNode;
 
-typedef struct {
-	QueueNode* head;
-	QueueNode* tail;
-	int size;
-} Queue;
-
-Queue* create_queue() {
-	Queue* q = malloc(sizeof(Queue));
-
-	q->head = NULL;
-	q->tail = NULL;
-	q->size = 0;
-
-	return q;
+void swap(HuffmanNode** a, HuffmanNode** b) {
+	HuffmanNode* temp = *a;
+	*a = *b;
+	*b = temp;
 }
 
-int size(Queue* q) { 
-	return q->size; 
-}
-
-bool is_empty(Queue* q) {
-	return q->size == 0; 
-}
-
-int peek(Queue* q, bool* status) {
-	if (is_empty(q)) {
-		*status = false;
+void heapify_up(MinHeap* heap, int idx) {
+	if (idx == 0) {
+		return;
 	}
 
-	*status = true;
-	return q->head->val;
+	const unsigned int parentNodeIdx = (idx - 1) / 2;
+
+	if (heap->items[parentNodeIdx]->freq > heap->items[idx]->freq) {
+		swap(&heap->items[parentNodeIdx], &heap->items[idx]);
+		heapify_up(heap, parentNodeIdx);
+	}
 }
 
-void enqueue(Queue* q, int newVal) {
-	QueueNode* newNode = malloc(sizeof(QueueNode));
-	newNode->val = newVal;
-	newNode->next = NULL;
+void heapify_down(MinHeap* heap, int idx) {
+	int smallest = idx;
+	int left = 2 * idx + 1;
+	int right = 2 * idx + 2;
 
-	if (is_empty(q)) {
-		q->head = newNode;
-		q->tail = newNode;
-	} else {
-		q->tail->next = newNode;
-		q->tail = q->tail->next;
+	if (left < heap->size &&
+	    heap->items[left]->freq < heap->items[smallest]->freq) {
+		smallest = left;
 	}
 
-	q->size++;
+	if (right < heap->size &&
+	    heap->items[right]->freq < heap->items[smallest]->freq) {
+		smallest = right;
+	}
+
+	if (smallest != idx) {
+		swap(&heap->items[idx], &heap->items[smallest]);
+		heapify_down(heap, smallest);
+	}
 }
 
-int dequeue(Queue* q, bool* status) {
-	if (is_empty(q)) {
-		*status = false;
-		return 0;
+void enqueue(MinHeap* heap, HuffmanNode* newNode) {
+	if (heap->size == MAX) {
+		fprintf(stderr, "Heap is full\n");
+		return;
 	}
-
-	*status = true;
-	int value = q->head->val;
-	QueueNode* temp = q->head;
-
-	if (q->size == 1) {
-		q->head = NULL;
-		q->tail = NULL;
-	} else {
-		q->head = q->head->next;
-	}
-
-	free(temp);
-	q->size--;
-
-	return value;
+	heap->items[heap->size] = newNode;
+	heapify_up(heap, heap->size);
+	heap->size++;
 }
 
-void destroy_queue(Queue* q) {
-	QueueNode* curr = q->head;
-
-	while (curr != NULL) {
-		QueueNode* temp = curr;
-		curr = curr->next;
-		free(temp);
+HuffmanNode* dequeue(MinHeap* heap) {
+	if (!heap->size) {
+		fprintf(stderr, "Heap Empty\n");
+		return NULL;
 	}
 
-	free(q);
+	HuffmanNode* node = heap->items[0];
+	heap->items[0] = heap->items[--heap->size];
+	heap->items[heap->size] = NULL;
+	heapify_down(heap, 0);
+
+	return node;
 }
 
-void printQueue(Queue* q) {
-	QueueNode* curr = q->head;
-
-	while (curr != NULL) {
-		printf("%d ", curr->val);
-		curr = curr->next;
-	}
-	printf("\n");
+HuffmanNode* create_node(char c, int freq) {
+	HuffmanNode* newNode = malloc(sizeof(HuffmanNode));
+	newNode->c = c;
+	newNode->freq = freq;
+	newNode->left = NULL;
+	newNode->right = NULL;
+	return newNode;
 }
 
 int main() {
-	Queue* myqueue = create_queue();
+	MinHeap heap = {.size = 0};
 
-	if (is_empty(myqueue)) {
-		printf("The Queue is empty.\n");
+	enqueue(&heap, create_node('a', 3));
+	enqueue(&heap, create_node('b', 5));
+	enqueue(&heap, create_node('c', 6));
+	enqueue(&heap, create_node('d', 4));
+	enqueue(&heap, create_node('e', 2));
+
+	while (heap.size > 0) {
+		HuffmanNode* node = dequeue(&heap);
+		printf("%c : %d\n", node->c ? node->c : '#', node->freq);
+		free(node);
 	}
-
-	for (int i = 1; i < 6; i++) {
-		enqueue(myqueue, i);
-	}
-	printQueue(myqueue);
-
-	bool status = true;
-	int myval = dequeue(myqueue, &status);
-
-	if (status == true) {
-		printf("My Val: %d\n", myval);
-	}
-
-	printQueue(myqueue);
-	int front = peek(myqueue, &status);
-
-	if (status == true) {
-		printf("front: %d\n", front);
-	}
-
-	destroy_queue(myqueue);
 }

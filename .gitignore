@@ -7,3 +7,4 @@
 
 # ignore specific file names
 **/input.gz
+**/myfile.gz
