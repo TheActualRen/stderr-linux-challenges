@@ -1,6 +1,9 @@
+# ** ignore all of a filetype
+
+
 # ignore all the exe i will make
-exe
-out
+**.exe
+**.out
 
 # ignore specific file names
-input.gz
+**/input.gz
