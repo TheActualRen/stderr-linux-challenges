@@ -9,6 +9,7 @@ int main() {
 	const int length = getsizeof(startpoint);
 
 	char unsigned reverse[length + 1];
+	reverse[length] = '\0';
 
 	for (int i = 0; i < length; i++) {
 		const int j = length - 1 - i;
