@@ -5,6 +5,7 @@
 **.exe
 **.out
 **.obsidian
+**.o
 
 # ignore specific file names
 **/input.gz
